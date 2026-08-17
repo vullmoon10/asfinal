@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>AUTOSCORE V2 - Yeolpumta Edition</title>
+    <style>
+        :root { --primary: #4f46e5; --danger: #ef4444; --success: #10b981; --warning: #f59e0b; --bg-color: #f3f4f6; --dark: #1f2937; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+        body { background-color: var(--bg-color); color: var(--dark); padding: 20px; line-height: 1.5; }
+        
+        .container { max-width: 600px; margin: 0 auto; background: white; padding: 24px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .large-container { max-width: 800px; }
+        .hidden { display: none !important; }
+        
+        header { text-align: center; margin-bottom: 20px; position: relative; }
+        h1 { color: var(--primary); font-size: 2rem; margin-bottom: 5px; }
+        .subtitle { color: #6b7280; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 15px;}
+        .user-badge { display: inline-block; background: #e0e7ff; color: var(--primary); padding: 5px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: bold; margin-bottom: 15px; }
+        .nav-buttons { position: absolute; top: 0; right: 0; display: flex; gap: 5px; }
+        
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 0.9rem; }
+        input { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 1rem; }
+        input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1); }
+        
+        .btn { padding: 10px 15px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; color: white; display: inline-flex; align-items: center; justify-content: center; transition: 0.2s; text-decoration: none;}
+        .btn.small { padding: 6px 10px; font-size: 0.8rem; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-primary { background: var(--primary); } .btn-primary:hover { background: #4338ca; }
+        .btn-danger { background: var(--danger); } .btn-danger:hover { background: #dc2626; }
+        .btn-success { background: var(--success); width: 100%; margin-top: 10px; } .btn-success:hover { background: #059669; }
+        .btn-warning { background: var(--warning); color: #fff;} .btn-warning:hover { background: #d97706; }
+        .btn-outline { background: transparent; border: 1px solid #ccc; color: #333; } .btn-outline:hover { background: #f3f4f6; }
+        
+        .flex { display: flex; gap: 10px; } .flex-1 { flex: 1; }
+        .timer-display { font-family: monospace; font-size: 3.5rem; text-align: center; background: #f8fafc; padding: 20px; border-radius: 8px; border: 2px solid #e5e7eb; margin: 15px 0; font-weight: bold; color: var(--primary); }
+        
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+        .stat-box { background: #f8fafc; padding: 15px; text-align: center; border-radius: 8px; border: 1px solid #e5e7eb; }
+        .stat-value { font-size: 1.5rem; font-weight: bold; display: block; margin-top: 5px; }
+        img.graph { width: 100%; border-radius: 8px; border: 1px solid #ccc; margin-top: 10px; background: #fff; }
+        
+        .error-msg { color: var(--danger); text-align: center; margin-top: 10px; font-size: 0.9rem; min-height: 20px;}
+        .success-msg { color: var(--success); text-align: center; margin-top: 10px; font-size: 0.9rem; }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.9rem; }
+        th, td { padding: 12px 10px; border-bottom: 1px solid #ddd; text-align: center; }
+        th { background: #f8fafc; color: #4b5563; font-weight: 700;}
+        
+        /* 열품타 탭 UI */
+        .tabs { display: flex; border-bottom: 2px solid #e5e7eb; margin-bottom: 20px; }
+        .tab { flex: 1; text-align: center; padding: 10px; cursor: pointer; font-weight: bold; color: #6b7280; transition: 0.2s;}
+        .tab:hover { background: #f9fafb; }
+        .tab.active { color: var(--primary); border-bottom: 3px solid var(--primary); margin-bottom: -2px; }
+        
+        /* 라이브 접속자 카드 */
+        .live-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; }
+        .live-card { background: #fff; border: 2px solid #e5e7eb; border-radius: 10px; padding: 15px; text-align: center; position: relative; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.05);}
+        .live-card.studying { border-color: var(--success); background: #ecfdf5;}
+        .live-dot { position: absolute; top: 10px; right: 10px; width: 12px; height: 12px; background-color: var(--success); border-radius: 50%; animation: pulse 1.5s infinite; }
+        .live-user { font-weight: bold; font-size: 1.1rem; color: var(--dark); margin-bottom: 5px;}
+        .live-subject { font-size: 0.85rem; color: #4b5563; background: #e5e7eb; padding: 2px 8px; border-radius: 12px; display: inline-block; margin-bottom: 10px;}
+        .live-time { font-family: monospace; font-size: 1.5rem; font-weight: bold; color: var(--primary); }
+        
+        @keyframes pulse {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+
+        .rank-row-1 { background-color: #fffbeb; font-weight: bold; }
+        .rank-row-2 { background-color: #f3f4f6; font-weight: bold; }
+        .rank-row-3 { background-color: #fff1f2; font-weight: bold; }
+        .medal { font-size: 1.2rem; margin-right: 5px;}
+    </style>
+</head>
+<body>
+
+    <!-- 1. AUTH VIEW -->
+    <div class="container" id="view-auth">
+        <header>
+            <h1>AUTOSCORE V2</h1>
+            <p class="subtitle">Secure Local Edition</p>
+        </header>
+        <h2 id="auth-title" style="text-align: center; margin-bottom: 20px;">로그인</h2>
+        <div id="auth-error" class="error-msg"></div>
+        <div id="auth-success" class="success-msg hidden"></div>
+        
+        <div class="form-group"><label>아이디</label><input type="text" id="auth-id" placeholder="아이디 입력" autocomplete="off"></div>
+        <div class="form-group"><label>비밀번호</label><input type="password" id="auth-pwd" placeholder="비밀번호 입력"></div>
+        
+        <button id="btn-login-submit" class="btn btn-primary" style="width: 100%;">로그인</button>
+        <button id="btn-signup-submit" class="btn btn-success hidden" style="width: 100%;">회원가입</button>
+
+        <div style="text-align: center; margin-top: 15px; font-size: 0.9rem;">
+            <span id="toggle-to-signup">계정이 없으신가요? <a href="#" onclick="toggleAuth('signup'); return false;" style="color:var(--primary); font-weight:bold;">새로 만들기</a></span>
+            <span id="toggle-to-login" class="hidden">이미 계정이 있으신가요? <a href="#" onclick="toggleAuth('login'); return false;" style="color:var(--primary); font-weight:bold;">로그인하기</a></span>
+        </div>
+    </div>
+
+    <!-- 2. MAIN VIEW (문제 풀이) -->
+    <div class="container hidden" id="view-main">
+        <header>
+            <h1>AUTOSCORE V2</h1>
+            <div class="user-badge" id="display-user"></div>
+            <div class="nav-buttons">
+                <button class="btn btn-warning small" onclick="switchView('yeolpumta')">🔥 열품타 라운지</button>
+                <button class="btn btn-outline small" onclick="switchView('dashboard')">대시보드</button>
+                <button class="btn btn-danger small" onclick="handleLogout()">로그아웃</button>
+            </div>
+        </header>
+
+        <!-- ★ 드롭다운 + 직접 입력(datalist) 적용 부분 ★ -->
+        <div class="form-group">
+            <label>과목</label>
+            <input type="text" id="subject" list="subject-list" placeholder="과목 선택 또는 새 과목 입력" autocomplete="off">
+            <datalist id="subject-list">
+                <!-- 자바스크립트를 통해 누적된 과목들이 여기에 자동으로 들어갑니다. -->
+            </datalist>
+        </div>
+        
+        <div class="flex">
+            <button class="btn btn-primary flex-1" id="btn-start">▶ START</button>
+            <button class="btn btn-danger flex-1" id="btn-stop" disabled>■ STOP</button>
+        </div>
+        <div class="timer-display" id="timer-display">00:00:00</div>
+        
+        <div class="flex">
+            <div class="form-group flex-1"><label>문제 수</label><input type="number" id="qcnt" disabled></div>
+            <div class="form-group flex-1"><label>정답 수</label><input type="number" id="ac" disabled></div>
+        </div>
+        
+        <button class="btn btn-success" id="btn-analyze" disabled>ANALYZE & SAVE</button>
+        <div id="main-error" class="error-msg"></div>
+
+        <div id="result-section" class="hidden" style="margin-top: 20px; border-top: 1px solid #eee; padding-top:20px;">
+            <h2 style="text-align: center; color: var(--success); margin-bottom:15px;">SAVED!</h2>
+            <div class="stats-grid">
+                <div class="stat-box">정답률<span class="stat-value" id="res-acc" style="color:var(--primary)">-</span></div>
+                <div class="stat-box">QPM<span class="stat-value" id="res-qpm">-</span></div>
+            </div>
+            <p style="text-align: center; font-size:0.9rem;">총 소요 시간: <span id="res-time"></span> | MPQ: <span id="res-mpq"></span>초</p>
+            <div class="flex" style="margin-top: 15px;">
+                <button class="btn btn-primary flex-1" onclick="resetSession()">새 문제 풀이</button>
+                <a class="btn btn-outline flex-1" id="btn-txt" target="_blank" style="text-decoration:none;">TXT 열기</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. DASHBOARD VIEW (개인 통계) -->
+    <div class="container large-container hidden" id="view-dashboard">
+        <header>
+            <h1>나의 학습 대시보드</h1>
+            <p class="subtitle">내 계정에 저장된 기록입니다.</p>
+            <div class="nav-buttons"><button class="btn btn-primary small" onclick="switchView('main')">← 문제 풀이</button></div>
+        </header>
+
+        <div style="background:#fef3c7; border:1px solid #f59e0b; border-radius:8px; padding:15px; margin-bottom:20px; text-align:center;">
+            <h3 style="color:#d97706; margin-bottom:5px;">🔥 오늘 하루의 공부량</h3>
+            <div style="font-size: 2rem; font-weight:bold; color:var(--dark);" id="dash-today-time">0시간 0분 0초</div>
+            <div id="dash-today-subjects" style="margin-top:10px; font-size:0.9rem; color:#6b7280;"></div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-box">총 세션<span class="stat-value" id="dash-total">0</span></div>
+            <div class="stat-box">평균 정답률<span class="stat-value" id="dash-acc" style="color:var(--primary)">0%</span></div>
+        </div>
+
+        <div class="flex">
+            <div class="flex-1"><h3>정답률 (%)</h3><img id="graph-acc" class="graph"></div>
+            <div class="flex-1"><h3>QPM (속도)</h3><img id="graph-qpm" class="graph"></div>
+        </div>
+        <div class="flex" style="margin-top: 15px;">
+            <div class="flex-1"><h3>MPQ (1문제당 초)</h3><img id="graph-mpq" class="graph"></div>
+            <div class="flex-1"><h3>정답/오답 비교</h3><img id="graph-cw" class="graph"></div>
+        </div>
+
+        <h3 style="margin-top: 20px;">최근 기록</h3>
+        <table>
+            <thead><tr><th>날짜</th><th>과목</th><th>문제</th><th>정답</th><th>정답률</th></tr></thead>
+            <tbody id="history-tbody"></tbody>
+        </table>
+    </div>
+
+    <!-- 4. YEOLPUMTA VIEW (열품타 라운지) -->
+    <div class="container large-container hidden" id="view-yeolpumta">
+        <header>
+            <h1>🔥 열품타 라운지</h1>
+            <p class="subtitle">함께 공부하며 동기부여를 받아보세요!</p>
+            <div class="nav-buttons"><button class="btn btn-primary small" onclick="switchView('main')">← 문제 풀이</button></div>
+        </header>
+
+        <div class="tabs">
+            <div class="tab active" onclick="switchYeolTab('live')" id="tab-live">🟢 접속 중인 멤버</div>
+            <div class="tab" onclick="switchYeolTab('daily')" id="tab-daily">📅 오늘의 랭킹</div>
+            <div class="tab" onclick="switchYeolTab('total')" id="tab-total">🏆 누적 명예의 전당</div>
+        </div>
+
+        <!-- 4-1. 라이브 뷰 -->
+        <div id="yeol-live">
+            <p style="text-align: center; margin-bottom: 20px; color:#6b7280; font-size:0.9rem;">현재 타이머를 켜고 집중하고 있는 사용자들입니다.</p>
+            <div class="live-grid" id="live-container">
+                <!-- 실시간 카드 삽입 -->
+            </div>
+        </div>
+
+        <!-- 4-2. 랭킹 뷰 -->
+        <div id="yeol-ranking" class="hidden">
+            <table>
+                <thead>
+                    <tr><th>순위</th><th>사용자</th><th>공부 시간</th><th>푼 문제 수</th><th>평균 정답률</th></tr>
+                </thead>
+                <tbody id="ranking-tbody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        let currentUserId = "";
+
+        document.addEventListener('DOMContentLoaded', checkAuth);
+
+        async function checkAuth() {
+            try {
+                const res = await fetch('/api/auth/status');
+                const data = await res.json();
+                if(data.logged_in) {
+                    currentUserId = data.userid;
+                    document.getElementById('display-user').innerText = '👤 ' + data.userid;
+                    switchView('main');
+                } else {
+                    switchView('auth');
+                }
+            } catch (e) {
+                console.warn("백엔드 서버 미작동:", e);
+                document.getElementById('auth-error').innerText = "서버 통신 에러: 파이썬(Flask) 서버가 실행 중인지 확인하세요.";
+                switchView('auth');
+            }
+        }
+
+        // ★ 신규 기능: 서버에서 사용자의 과목 목록을 불러와서 드롭다운(datalist) 채우기
+        async function loadSubjects() {
+            try {
+                const res = await fetch('/api/subjects');
+                const data = await res.json();
+                if (data.success) {
+                    const dataList = document.getElementById('subject-list');
+                    dataList.innerHTML = ''; // 기존 목록 비우기
+                    
+                    data.subjects.forEach(subj => {
+                        const option = document.createElement('option');
+                        option.value = subj; // 드롭다운 항목 추가
+                        dataList.appendChild(option);
+                    });
+                }
+            } catch (e) {
+                console.warn("과목 목록 로드 실패:", e);
+            }
+        }
+
+        function toggleAuth(mode) {
+            document.getElementById('auth-error').innerText = '';
+            document.getElementById('auth-success').classList.add('hidden');
+            if(mode === 'signup') {
+                document.getElementById('auth-title').innerText = "회원가입";
+                document.getElementById('btn-login-submit').classList.add('hidden');
+                document.getElementById('btn-signup-submit').classList.remove('hidden');
+                document.getElementById('toggle-to-signup').classList.add('hidden');
+                document.getElementById('toggle-to-login').classList.remove('hidden');
+            } else {
+                document.getElementById('auth-title').innerText = "로그인";
+                document.getElementById('btn-login-submit').classList.remove('hidden');
+                document.getElementById('btn-signup-submit').classList.add('hidden');
+                document.getElementById('toggle-to-signup').classList.remove('hidden');
+                document.getElementById('toggle-to-login').classList.add('hidden');
+            }
+        }
+
+        document.getElementById('btn-login-submit').addEventListener('click', async () => {
+            const userid = document.getElementById('auth-id').value;
+            const password = document.getElementById('auth-pwd').value;
+            try {
+                const res = await fetch('/api/auth/login', {
+                    method: 'POST', headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({userid, password})
+                });
+                const data = await res.json();
+                if(data.success) checkAuth();
+                else document.getElementById('auth-error').innerText = data.error;
+            } catch (e) {
+                document.getElementById('auth-error').innerText = "서버에 연결할 수 없습니다.";
+            }
+        });
+
+        document.getElementById('btn-signup-submit').addEventListener('click', async () => {
+            const userid = document.getElementById('auth-id').value;
+            const password = document.getElementById('auth-pwd').value;
+            try {
+                const res = await fetch('/api/auth/register', {
+                    method: 'POST', headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({userid, password})
+                });
+                const data = await res.json();
+                if(data.success) {
+                    document.getElementById('auth-success').innerText = data.message;
+                    document.getElementById('auth-success').classList.remove('hidden');
+                    document.getElementById('auth-error').innerText = '';
+                    setTimeout(() => toggleAuth('login'), 1500);
+                } else {
+                    document.getElementById('auth-error').innerText = data.error;
+                }
+            } catch (e) {
+                document.getElementById('auth-error').innerText = "서버에 연결할 수 없습니다.";
+            }
+        });
+
+        async function handleLogout() {
+            await fetch('/api/auth/logout', {method: 'POST'});
+            document.getElementById('auth-id').value = '';
+            document.getElementById('auth-pwd').value = '';
+            checkAuth();
+        }
+
+        // --- 화면 제어 ---
+        let liveInterval = null; 
+
+        function switchView(view) {
+            document.getElementById('view-auth').classList.add('hidden');
+            document.getElementById('view-main').classList.add('hidden');
+            document.getElementById('view-dashboard').classList.add('hidden');
+            document.getElementById('view-yeolpumta').classList.add('hidden');
+            
+            document.getElementById('view-' + view).classList.remove('hidden');
+            
+            clearInterval(liveInterval); 
+
+            // 메인 뷰가 열릴 때마다 사용자의 과목 목록을 업데이트합니다.
+            if(view === 'main') loadSubjects();
+            if(view === 'dashboard') loadDashboard();
+            if(view === 'yeolpumta') switchYeolTab('live'); 
+            
+            window.scrollTo(0,0);
+        }
+
+        function formatTime(s) {
+            let h = Math.floor(s/3600), m = Math.floor((s%3600)/60), sec = Math.floor(s%60);
+            return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+        }
+        
+        function formatKoreanTime(s) {
+            let h = Math.floor(s/3600), m = Math.floor((s%3600)/60), sec = Math.floor(s%60);
+            let timeStr = "";
+            if (h > 0) timeStr += `${h}시간 `;
+            if (m > 0) timeStr += `${m}분 `;
+            timeStr += `${sec}초`;
+            return timeStr;
+        }
+
+        // --- 타이머 ---
+        let visualTimer = null; let visualStart = 0; let finalTime = 0;
+
+        document.getElementById('btn-start').addEventListener('click', async () => {
+            const subject = document.getElementById('subject').value;
+            if(!subject) return document.getElementById('main-error').innerText = "과목을 입력하세요!";
+            document.getElementById('main-error').innerText = "";
+            
+            const res = await fetch('/api/start', {
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({subject: subject})
+            });
+            if(res.ok) {
+                document.getElementById('subject').disabled = true;
+                document.getElementById('btn-start').disabled = true;
+                document.getElementById('btn-stop').disabled = false;
+                visualStart = Date.now();
+                visualTimer = setInterval(() => {
+                    document.getElementById('timer-display').innerText = formatTime((Date.now() - visualStart)/1000);
+                }, 1000);
+            }
+        });
+
+        document.getElementById('btn-stop').addEventListener('click', async () => {
+            const res = await fetch('/api/stop', { method: 'POST' });
+            const data = await res.json();
+            if(data.success) {
+                clearInterval(visualTimer);
+                finalTime = data.timer;
+                document.getElementById('timer-display').innerText = formatTime(finalTime);
+                document.getElementById('btn-stop').disabled = true;
+                document.getElementById('qcnt').disabled = false;
+                document.getElementById('ac').disabled = false;
+                document.getElementById('btn-analyze').disabled = false;
+                document.getElementById('qcnt').focus();
+            }
+        });
+
+        document.getElementById('btn-analyze').addEventListener('click', async () => {
+            const subject = document.getElementById('subject').value;
+            const qcnt = document.getElementById('qcnt').value;
+            const ac = document.getElementById('ac').value;
+            
+            document.getElementById('btn-analyze').disabled = true;
+            document.getElementById('btn-analyze').innerText = "분석 중...";
+
+            const res = await fetch('/api/analyze', {
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({subject, qcnt, ac, timer: finalTime})
+            });
+            const data = await res.json();
+
+            if(data.success) {
+                const r = data.results;
+                document.getElementById('res-acc').innerText = r.accuracy.toFixed(2) + '%';
+                document.getElementById('res-qpm').innerText = r.qpm.toFixed(2);
+                document.getElementById('res-time').innerText = formatTime(r.timer);
+                document.getElementById('res-mpq').innerText = r.mpq.toFixed(2);
+                document.getElementById('btn-txt').href = `/results/${r.txt_file}`;
+                
+                document.getElementById('qcnt').disabled = true; document.getElementById('ac').disabled = true;
+                document.getElementById('result-section').classList.remove('hidden');
+                document.getElementById('btn-analyze').innerText = "ANALYZE & SAVE";
+                
+                // 새로운 과목이 추가되었을 수 있으므로 목록을 새로고침합니다.
+                loadSubjects();
+            } else {
+                document.getElementById('main-error').innerText = data.error;
+                document.getElementById('btn-analyze').disabled = false;
+                document.getElementById('btn-analyze').innerText = "ANALYZE & SAVE";
+            }
+        });
+
+        function resetSession() {
+            document.getElementById('subject').disabled = false; document.getElementById('subject').value = '';
+            document.getElementById('btn-start').disabled = false; document.getElementById('btn-stop').disabled = true;
+            document.getElementById('qcnt').disabled = true; document.getElementById('qcnt').value = '';
+            document.getElementById('ac').disabled = true; document.getElementById('ac').value = '';
+            document.getElementById('btn-analyze').disabled = true; document.getElementById('timer-display').innerText = "00:00:00";
+            document.getElementById('result-section').classList.add('hidden'); document.getElementById('main-error').innerText = '';
+        }
+
+        // --- 대시보드 ---
+        async function loadDashboard() {
+            const res = await fetch('/api/dashboard');
+            const data = await res.json();
+            if(data.success) {
+                document.getElementById('dash-today-time').innerText = formatKoreanTime(data.today_total);
+                
+                let subjStr = [];
+                for (const [subj, t] of Object.entries(data.subject_breakdown)) {
+                    subjStr.push(`${subj} (${Math.floor(t/60)}분)`);
+                }
+                document.getElementById('dash-today-subjects').innerText = subjStr.length ? subjStr.join(' / ') : "오늘 공부한 기록이 없습니다.";
+
+                const records = data.records;
+                document.getElementById('dash-total').innerText = records.length;
+                if(records.length > 0) {
+                    let sumAcc = 0;
+                    records.forEach(r => sumAcc += parseFloat(r.accuracy));
+                    document.getElementById('dash-acc').innerText = (sumAcc / records.length).toFixed(2) + '%';
+                    
+                    const t = Date.now();
+                    document.getElementById('graph-acc').src = `/graphs/accuracy_${currentUserId}.png?t=${t}`;
+                    document.getElementById('graph-qpm').src = `/graphs/qpm_${currentUserId}.png?t=${t}`;
+                    document.getElementById('graph-mpq').src = `/graphs/mpq_${currentUserId}.png?t=${t}`;
+                    document.getElementById('graph-cw').src = `/graphs/correct_wrong_${currentUserId}.png?t=${t}`;
+
+                    const tbody = document.getElementById('history-tbody'); tbody.innerHTML = '';
+                    [...records].reverse().slice(0, 10).forEach(r => {
+                        tbody.innerHTML += `<tr><td>${r.date}</td><td>${r.subject}</td><td>${r.qcnt}</td><td>${r.ac}</td><td>${parseFloat(r.accuracy).toFixed(1)}%</td></tr>`;
+                    });
+                }
+            }
+        }
+
+        // --- 열품타 라운지 ---
+        function switchYeolTab(tabType) {
+            document.getElementById('tab-live').classList.remove('active');
+            document.getElementById('tab-daily').classList.remove('active');
+            document.getElementById('tab-total').classList.remove('active');
+            document.getElementById(`tab-${tabType}`).classList.add('active');
+
+            document.getElementById('yeol-live').classList.add('hidden');
+            document.getElementById('yeol-ranking').classList.add('hidden');
+
+            clearInterval(liveInterval);
+
+            if (tabType === 'live') {
+                document.getElementById('yeol-live').classList.remove('hidden');
+                loadLiveUsers();
+                liveInterval = setInterval(updateLiveTimersLocally, 1000);
+            } else {
+                document.getElementById('yeol-ranking').classList.remove('hidden');
+                loadRanking(tabType);
+            }
+        }
+
+        let liveUsersData = []; 
+
+        async function loadLiveUsers() {
+            const res = await fetch('/api/yeolpumta/live');
+            const data = await res.json();
+            if(data.success) {
+                liveUsersData = data.live_users;
+                renderLiveUsers();
+            }
+        }
+
+        function renderLiveUsers() {
+            const container = document.getElementById('live-container');
+            container.innerHTML = '';
+
+            if (liveUsersData.length === 0) {
+                container.innerHTML = `<div style="grid-column: 1 / -1; padding: 30px; text-align: center; color: #9ca3af;">현재 타이머를 켜고 있는 멤버가 없습니다.<br>첫 번째로 스터디를 시작해보세요!</div>`;
+                return;
+            }
+
+            liveUsersData.forEach(user => {
+                const card = document.createElement('div');
+                card.className = 'live-card studying';
+                let meBadge = user.userid === currentUserId ? ' <span style="font-size:0.8rem; color:var(--primary);">(나)</span>' : '';
+
+                card.innerHTML = `
+                    <div class="live-dot"></div>
+                    <div class="live-user">👤 ${user.userid}${meBadge}</div>
+                    <div class="live-subject">📚 ${user.subject}</div>
+                    <div class="live-time" data-userid="${user.userid}" data-elapsed="${user.elapsed}">${formatTime(user.elapsed)}</div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function updateLiveTimersLocally() {
+            liveUsersData.forEach(user => {
+                user.elapsed += 1;
+                const timeEl = document.querySelector(`.live-time[data-userid="${user.userid}"]`);
+                if (timeEl) timeEl.innerText = formatTime(user.elapsed);
+            });
+        }
+
+        async function loadRanking(type) {
+            const res = await fetch(`/api/yeolpumta/ranking?type=${type}`);
+            const data = await res.json();
+            if(data.success) {
+                const ranking = data.ranking;
+                const tbody = document.getElementById('ranking-tbody');
+                tbody.innerHTML = '';
+                
+                if (ranking.length === 0) {
+                    const msg = type === 'daily' ? "오늘의 학습 기록이 아직 없습니다." : "아직 기록이 없습니다.";
+                    tbody.innerHTML = `<tr><td colspan="5" style="padding:20px; color:#9ca3af;">${msg}</td></tr>`;
+                    return;
+                }
+
+                ranking.forEach((user, index) => {
+                    let rankClass = ''; let medal = '';
+                    if (index === 0) { rankClass = 'rank-row-1'; medal = '<span class="medal">🥇</span>'; }
+                    else if (index === 1) { rankClass = 'rank-row-2'; medal = '<span class="medal">🥈</span>'; }
+                    else if (index === 2) { rankClass = 'rank-row-3'; medal = '<span class="medal">🥉</span>'; }
+
+                    if (user.userid === currentUserId) {
+                        rankClass += ' my-rank';
+                        user.userid = `<strong>${user.userid} (나)</strong>`;
+                    }
+
+                    tbody.innerHTML += `
+                        <tr class="${rankClass}">
+                            <td>${medal}${index + 1}위</td>
+                            <td style="color:var(--primary);">${user.userid}</td>
+                            <td>${formatKoreanTime(user.total_timer)}</td>
+                            <td>${user.total_qcnt}문제</td>
+                            <td>${user.accuracy.toFixed(1)}%</td>
+                        </tr>
+                    `;
+                });
+            }
+        }
+    </script>
+</body>
+</html>
